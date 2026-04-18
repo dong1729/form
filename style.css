@@ -1,0 +1,265 @@
+:root {
+    --bg-color: #050505;
+    --terminal-bg: #0d1117;
+    --text-main: #00ff41;
+    --text-dim: #4d994d;
+    --text-prompt: #00bfff;
+    --border-color: #30363d;
+    --glow: 0 0 10px rgba(0, 255, 65, 0.3);
+    --error: #ff4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Fira Code', monospace; }
+
+body {
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
+    background-size: 20px 20px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: var(--text-main);
+    position: relative;
+    overflow-x: hidden;
+}
+
+#matrix-rain { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.35; pointer-events: none; }
+.ambient-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.orb { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(80px); opacity: 0.45; mix-blend-mode: screen; will-change: transform; }
+.orb-1 { background: radial-gradient(circle, rgba(0, 255, 65, 0.55), transparent 70%); top: 8%; left: -80px; animation: drift-1 18s ease-in-out infinite; }
+.orb-2 { background: radial-gradient(circle, rgba(0, 191, 255, 0.5), transparent 70%); bottom: 10%; right: -90px; animation: drift-2 22s ease-in-out infinite; }
+.orb-3 { background: radial-gradient(circle, rgba(180, 0, 255, 0.35), transparent 70%); top: 55%; left: 40%; width: 220px; height: 220px; animation: drift-3 26s ease-in-out infinite; }
+
+@keyframes drift-1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(120px, 80px) scale(1.1); } }
+@keyframes drift-2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-140px, -70px) scale(1.15); } }
+@keyframes drift-3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-80px, 100px) scale(0.9); } }
+
+.scan-overlay {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0, 255, 65, 0.04) 0px, rgba(0, 255, 65, 0.04) 1px, transparent 2px, transparent 4px);
+    animation: scan-flicker 6s infinite;
+}
+.scan-overlay::before {
+    content: ""; position: absolute; left: 0; right: 0; height: 140px;
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 65, 0.08) 50%, transparent);
+    animation: scan-sweep 7s linear infinite;
+}
+@keyframes scan-flicker { 0%, 100% { opacity: 0.9; } 45% { opacity: 0.75; } 50% { opacity: 1; } }
+@keyframes scan-sweep { 0% { transform: translateY(-200px); } 100% { transform: translateY(110vh); } }
+
+.terminal-window {
+    background: rgba(13, 17, 23, 0.9);
+    backdrop-filter: blur(5px);
+    width: 100%; max-width: 550px; border-radius: 8px; border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), var(--glow); overflow: hidden; position: relative;
+    z-index: 2; animation: terminal-glow 4s ease-in-out infinite;
+}
+.terminal-window::before {
+    content: ""; position: absolute; inset: -2px; border-radius: 10px; padding: 2px;
+    background: linear-gradient(120deg, transparent 30%, rgba(0, 255, 65, 0.6), rgba(0, 191, 255, 0.6), transparent 70%);
+    background-size: 300% 300%; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; animation: border-flow 8s linear infinite; z-index: -1;
+}
+
+@keyframes terminal-glow { 0%, 100% { box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 10px rgba(0, 255, 65, 0.3); } 50% { box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 30px rgba(0, 255, 65, 0.55); } }
+@keyframes border-flow { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+
+.terminal-header { background: #161b22; padding: 10px 15px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); cursor: grab; user-select: none; }
+.terminal-header:active { cursor: grabbing; }
+.terminal-buttons { display: flex; gap: 8px; }
+.terminal-buttons span { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.btn-close { background: #ff5f56; } .btn-minimize { background: #ffbd2e; } .btn-maximize { background: #27c93f; }
+.terminal-title { margin-left: auto; margin-right: auto; font-size: 13px; color: #8b949e; }
+.terminal-body { padding: 25px; }
+
+.typewriter-text { margin-bottom: 20px; font-size: 14px; color: var(--text-dim); }
+.status-ok { color: var(--text-main); font-weight: bold; }
+.blink-cursor { animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.progress-cli { font-size: 14px; margin-bottom: 25px; color: var(--text-prompt); border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; }
+
+.form-step { display: none; }
+.form-step.active { display: block; animation: fadeIn 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; font-size: 14px; margin-bottom: 8px; color: #c9d1d9; }
+.input-group label span { color: var(--text-prompt); margin-right: 5px; }
+input[type="text"], input[type="tel"], select, textarea { width: 100%; padding: 10px; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--text-main); font-size: 15px; transition: all 0.2s; outline: none; }
+input:focus, select:focus, textarea:focus { border-bottom: 1px solid var(--text-main); box-shadow: 0 5px 5px -5px var(--text-main); }
+select option { background: var(--terminal-bg); color: var(--text-main); }
+textarea { resize: none; }
+.error-text { display: none; margin-top: 5px; font-weight: bold; font-size: 12px; }
+
+.radio-group { display: flex; gap: 15px; margin-top: 5px; }
+.radio-card { cursor: pointer; }
+.radio-card input { display: none; }
+.radio-content { display: inline-block; padding: 8px 15px; color: var(--text-dim); border: 1px solid var(--border-color); transition: 0.2s; }
+.radio-card input:checked + .radio-content { color: var(--terminal-bg); background: var(--text-main); border-color: var(--text-main); box-shadow: var(--glow); }
+
+.button-group { display: flex; gap: 15px; margin-top: 30px; }
+.btn-cmd { background: transparent; color: var(--text-main); border: 1px solid var(--text-main); padding: 12px 20px; font-size: 14px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.2s; }
+.btn-cmd:hover { background: var(--text-main); color: var(--terminal-bg); box-shadow: var(--glow); }
+.btn-back { border-color: var(--border-color); color: #8b949e; }
+.btn-execute { width: 100%; }
+.status-message { margin-top: 20px; padding: 10px; display: none; font-size: 14px; border-left: 3px solid; }
+.status-success { display: block; color: var(--text-main); border-color: var(--text-main); }
+.status-error { display: block; color: var(--error); border-color: var(--error); }
+
+/* --- HIỆU ỨNG TRUY VẾT IP --- */
+.ip-tracker {
+    position: fixed; top: 20px; right: 20px; color: var(--error); font-size: 13px; z-index: 100;
+    font-weight: bold; text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); background: rgba(20, 0, 0, 0.8);
+    padding: 8px 15px; border: 1px solid var(--error); border-radius: 4px; animation: blink 2s infinite; pointer-events: none;
+}
+
+/* --- HIỆU ỨNG TỰ HỦY BÁO ĐỘNG ĐỎ --- */
+.self-destruct-mode { animation: shake 0.4s infinite, flash-red 1s infinite !important; }
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-2px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+@keyframes flash-red {
+    0%, 100% { box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 30px rgba(255, 0, 0, 0.5); border-color: red; }
+    50% { box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 60px rgba(255, 0, 0, 0.9); border-color: darkred; }
+}
+/* Giao diện trình soạn thảo code mini */
+.code-editor-container {
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.code-header {
+    background: #1c2128;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #8b949e;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.code-input {
+    width: 100%;
+    padding: 15px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #e6edf3 !important; /* Màu trắng xám cho code */
+    font-family: 'Fira Code', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    tab-size: 4;
+    box-shadow: none !important;
+}
+
+.code-input::placeholder {
+    color: #484f58;
+}
+/* --- GIAO DIỆN IDE --- */
+.ide-container {
+    margin-top: 15px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: #0d1117;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.ide-header {
+    background: #161b22;
+    padding: 6px 15px;
+    font-size: 11px;
+    color: #8b949e;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #30363d;
+}
+
+.ide-editor {
+    display: flex;
+    min-height: 200px;
+}
+
+.line-numbers {
+    width: 35px;
+    padding: 15px 5px;
+    text-align: right;
+    background: #0d1117;
+    color: #484f58;
+    font-size: 13px;
+    border-right: 1px solid #30363d;
+    user-select: none;
+}
+
+.code-area {
+    flex: 1;
+    padding: 15px;
+    background: transparent;
+    border: none;
+    color: #79c0ff; /* Màu xanh code */
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* --- CHECKBOX & MULTISELECT STYLE --- */
+.checkbox-container {
+    display: block;
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-main);
+    user-select: none;
+}
+
+.checkbox-container input { display: none; }
+
+.checkmark {
+    position: absolute;
+    top: 0; left: 0;
+    height: 18px; width: 18px;
+    background-color: transparent;
+    border: 1px solid var(--text-main);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: var(--text-main);
+}
+
+.checkmark:after {
+    content: ""; position: absolute; display: none;
+    left: 5px; top: 1px; width: 5px; height: 10px;
+    border: solid #000; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-container input:checked ~ .checkmark:after { display: block; }
+
+.multiselect-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-item {
+    font-size: 13px;
+    color: #c9d1d9;
+    cursor: pointer;
+}

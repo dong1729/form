@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYS_STUDENT_EVALUATION</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <canvas id="matrix-rain" aria-hidden="true"></canvas>
+    <div class="ambient-orbs" aria-hidden="true">
+        <span class="orb orb-1"></span>
+        <span class="orb orb-2"></span>
+        <span class="orb orb-3"></span>
+    </div>
+    <div class="scan-overlay" aria-hidden="true"></div>
+
+    <div id="ip-tracker" class="ip-tracker">[ SYS_WARN ] SCANNING NETWORK TRACE...</div>
+
+    <div class="terminal-window" id="terminal-window">
+        <div class="terminal-header" id="terminal-header">
+            <div class="terminal-buttons">
+                <span class="btn-close"></span>
+                <span class="btn-minimize"></span>
+                <span class="btn-maximize"></span>
+            </div>
+            <div class="terminal-title">student_assessment_v1.sh</div>
+        </div>
+
+        <div class="terminal-body">
+            <div class="typewriter-text">
+                <p>> Đang khởi tạo môi trường kiểm tra...</p>
+                <p>> Trạng thái: <span class="status-ok">ĐÃ KẾT NỐI MÃ HÓA</span></p>
+                <p class="blink-cursor">_</p>
+            </div>
+
+            <div class="progress-cli">
+                [ Tiến trình: <span id="step-indicator">1/2</span> ]
+            </div>
+
+            <form id="studentForm" name="student_evaluation" data-netlify="true" netlify-honeypot="bot-field">
+                
+                <input type="hidden" name="form-name" value="student_evaluation" />
+                <input type="hidden" id="dynamic_answers" name="Chi_tiet_cau_tra_loi" value="" />
+                
+                <p style="display: none;">
+                    <label>Bot trap: <input name="bot-field" /></label>
+                </p>
+
+                <div class="form-step active" id="step1">
+                    <div class="input-group">
+                        <label for="name"><span>admin@academy:~$</span> Họ tên học sinh:</label>
+                        <input type="text" id="name" name="name" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="phone"><span>admin@academy:~$</span> Số điện thoại liên hệ:</label>
+                        <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxx (10 số)" pattern="^0\d{9}$" required>
+                        <div id="phone-error" class="error-text">>> ERROR: SỐ ĐIỆN THOẠI KHÔNG HỢP LỆ</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="class"><span>admin@academy:~$</span> Lớp học hiện tại:</label>
+                        <input type="text" id="class" name="class" placeholder="Ví dụ: 12A1" required>
+                    </div>
+
+                    <button type="button" class="btn-cmd" id="nextBtn">> ./next_step.sh</button>
+                </div>
+
+                <div class="form-step" id="step2">
+                    <div class="input-group">
+                        <label for="subject"><span>admin@academy:~$</span> Chọn bộ môn đăng ký:</label>
+                        <select id="subject" name="subject" required>
+                            <option value="" disabled selected>Chọn một option...</option>
+                            <option value="Tin học">Tin học / Lập trình</option>
+                            <option value="Toán học">Toán học</option>
+                            <option value="Vật lý">Vật lý</option>
+                        </select>
+                    </div>
+
+                    <div id="dynamic-questions-container"></div>
+
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label><span>admin@academy:~$</span> Hình thức học tập:</label>
+                        <div class="radio-group">
+                            <label class="radio-card">
+                                <input type="radio" name="learningType" value="Online" required>
+                                <span class="radio-content">[ ONLINE ]</span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="learningType" value="Offline">
+                                <span class="radio-content">[ OFFLINE ]</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 30px; border-top: 1px dashed var(--border-color); padding-top: 20px;">
+                        <label for="captcha"><span>admin@academy:~$</span> Xác thực Human. Gõ lệnh <span style="color: #ffbd2e;">sudo execute</span> để mở khóa:</label>
+                        <input type="text" id="captcha" placeholder="Nhập lệnh vào đây..." autocomplete="off">
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" class="btn-cmd btn-back" id="prevBtn">< cd ..</button>
+                        <button type="submit" class="btn-cmd btn-execute" id="submitBtn">> EXECUTE_SUBMIT</button>
+                    </div>
+                </div>
+            </form>
+
+            <div id="hacker-loader" style="display: none; font-size: 13px; color: var(--text-prompt); margin-top: 15px; font-family: 'Fira Code', monospace; line-height: 1.5;"></div>
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
