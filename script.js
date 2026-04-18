@@ -2,10 +2,12 @@
 fetch('https://api.ipify.org?format=json')
     .then(res => res.json())
     .then(data => {
-        document.getElementById('ip-tracker').innerHTML = `[!] CẢNH BÁO: ĐANG GIÁM SÁT TRUY CẬP TỪ IP: ${data.ip}`;
+        const ipTracker = document.getElementById('ip-tracker');
+        if(ipTracker) ipTracker.innerHTML = `[!] CẢNH BÁO: ĐANG GIÁM SÁT TRUY CẬP TỪ IP: ${data.ip}`;
     })
     .catch(() => {
-        document.getElementById('ip-tracker').innerHTML = `[!] CẢNH BÁO: TRUY CẬP ẨN DANH ĐANG BỊ THEO DÕI`;
+        const ipTracker = document.getElementById('ip-tracker');
+        if(ipTracker) ipTracker.innerHTML = `[!] CẢNH BÁO: TRUY CẬP ẨN DANH ĐANG BỊ THEO DÕI`;
     });
 
 // === 1. ÂM THANH (WEB AUDIO API) ===
@@ -53,7 +55,7 @@ function playSuccessSound() {
 
 document.getElementById('studentForm').addEventListener('keydown', playKeystroke);
 document.addEventListener('click', (e) => {
-    if(e.target.closest('button, .radio-card, select')) playClickSound();
+    if(e.target.closest('button, .radio-card, select, .checkbox-container')) playClickSound();
 });
 
 // === 2. DRAGGABLE WINDOW (CỬA SỔ KÉO THẢ) ===
@@ -87,8 +89,6 @@ function drag(e) {
 }
 
 // === 3. GỌI DỮ LIỆU TỪ GITHUB GIST ===
-// [GIỮ NGUYÊN ĐOẠN CODE DRAGGABLE, MATRIX VÀ AUDIO Ở PHÍA TRÊN]
-
 const GIST_RAW_URL = "https://gist.githubusercontent.com/dong1729/e21f77fbef33e056f1c34511e3ba66eb/raw/185aa1fdfafd3492a7b892f3489caee32a7e942b/questions.json";
 let formDatabase = {};
 
@@ -97,24 +97,23 @@ async function fetchQuestionsFromBackend() {
         const response = await fetch(GIST_RAW_URL);
         formDatabase = await response.json();
     } catch (error) {
-        console.error("Failed to load questions");
+        const container = document.getElementById('dynamic-questions-container');
+        if(container) container.innerHTML = `<div style="color: #ff4444; font-size: 12px;">>> LỖI: KHÔNG THỂ KẾT NỐI SERVER CÂU HỎI.</div>`;
     }
 }
 fetchQuestionsFromBackend();
 
-// --- HÀM RENDER CÂU HỎI ĐA TÍNH NĂNG ---
+// --- HÀM TẠO HTML CÂU HỎI ĐA TÍNH NĂNG ---
 function renderDynamicHTML(questionsArray) {
     let htmlContent = '';
     
     questionsArray.forEach(q => {
-        // Tạo wrapper cho từng câu hỏi/nhóm để dễ ẩn hiện
         const displayStyle = q.dependsOn ? 'none' : 'block';
         const dataAttribs = q.dependsOn ? `data-depends="${q.dependsOn}" data-show-if="${q.showIf}"` : '';
         
         htmlContent += `<div class="question-wrapper" id="${q.id || ''}" ${dataAttribs} style="display: ${displayStyle}">`;
         
         if (q.fields) {
-            // Nếu là nhóm câu hỏi con (nested)
             htmlContent += renderDynamicHTML(q.fields);
         } else {
             htmlContent += `<div class="input-group active"><label><span>admin@system:~$</span> ${q.label}</label>`;
@@ -124,7 +123,7 @@ function renderDynamicHTML(questionsArray) {
                 q.options.forEach(opt => {
                     htmlContent += `
                     <label class="radio-card">
-                        <input type="radio" name="${q.name}" value="${opt}" onchange="handleCondition(this)">
+                        <input type="radio" name="${q.name}" value="${opt}" onchange="window.handleCondition(this)">
                         <span class="radio-content">[ ${opt.toUpperCase()} ]</span>
                     </label>`;
                 });
@@ -133,7 +132,7 @@ function renderDynamicHTML(questionsArray) {
             else if (q.type === 'checkbox') {
                 htmlContent += `
                 <label class="checkbox-container">
-                    <input type="checkbox" name="${q.name}" onchange="handleCondition(this)">
+                    <input type="checkbox" name="${q.name}" onchange="window.handleCondition(this)">
                     <span class="checkmark"></span> ${q.text}
                 </label>`;
             }
@@ -141,7 +140,7 @@ function renderDynamicHTML(questionsArray) {
                 htmlContent += `<div class="multiselect-group">`;
                 q.options.forEach(opt => {
                     htmlContent += `
-                    <label class="checkbox-item">
+                    <label class="checkbox-item" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" name="${q.name}" value="${opt}"> ${opt}
                     </label>`;
                 });
@@ -153,9 +152,12 @@ function renderDynamicHTML(questionsArray) {
                     <div class="ide-header"><span>main.py</span><span>Python 3.10</span></div>
                     <div class="ide-editor">
                         <div class="line-numbers">1</div>
-                        <textarea name="${q.name}" class="code-area" spellcheck="false" oninput="updateIDE(this)"></textarea>
+                        <textarea name="${q.name}" class="code-area" spellcheck="false" oninput="window.updateIDE(this)" placeholder="${q.placeholder || ''}"></textarea>
                     </div>
                 </div>`;
+            }
+            else if (q.type === 'textarea') {
+                htmlContent += `<textarea name="${q.name}" rows="3" placeholder="${q.placeholder || ''}"></textarea>`;
             }
             else {
                 htmlContent += `<input type="${q.type}" name="${q.name}" placeholder="${q.placeholder || ''}">`;
@@ -168,8 +170,8 @@ function renderDynamicHTML(questionsArray) {
     return htmlContent;
 }
 
-// --- LOGIC ẨN HIỆN CÂU HỎI (BRANCHING) ---
-function handleCondition(el) {
+// --- LOGIC ẨN HIỆN CÂU HỎI & IDE ---
+window.handleCondition = function(el) {
     const val = el.type === 'checkbox' ? (el.checked ? 'on' : 'off') : el.value;
     const name = el.name;
     
@@ -178,17 +180,15 @@ function handleCondition(el) {
             wrapper.style.display = 'block';
         } else {
             wrapper.style.display = 'none';
-            // Reset dữ liệu bên trong khi bị ẩn
             wrapper.querySelectorAll('input, textarea, select').forEach(i => {
                 if(i.type === 'checkbox' || i.type === 'radio') i.checked = false;
                 else i.value = '';
             });
         }
     });
-}
+};
 
-// --- LOGIC IDE (SỐ DÒNG) ---
-function updateIDE(textarea) {
+window.updateIDE = function(textarea) {
     const lines = textarea.value.split('\n').length;
     const lineNumContainer = textarea.parentElement.querySelector('.line-numbers');
     let lineNums = '';
@@ -196,30 +196,60 @@ function updateIDE(textarea) {
         lineNums += i + '<br>';
     }
     lineNumContainer.innerHTML = lineNums;
-}
+};
+
+
+// === 4. KHAI BÁO BIẾN (PHẦN BẠN BỊ XÓA NHẦM TRƯỚC ĐÓ) ===
+const form = document.getElementById('studentForm');
+const step1 = document.getElementById('step1');
+const step2 = document.getElementById('step2');
+const nextBtn = document.getElementById('nextBtn');
+const prevBtn = document.getElementById('prevBtn');
+const submitBtn = document.getElementById('submitBtn');
+const statusMessage = document.getElementById('statusMessage');
+const stepIndicator = document.getElementById('step-indicator');
+const dynamicContainer = document.getElementById('dynamic-questions-container');
+const subjectSelect = document.getElementById('subject');
+const captchaInput = document.getElementById('captcha');
+const hackerLoader = document.getElementById('hacker-loader');
 
 // Khóa Submit ban đầu
-submitBtn.disabled = true;
-submitBtn.style.opacity = '0.3';
-submitBtn.innerHTML = '> Lệnh bị khóa';
+if(submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.3';
+    submitBtn.innerHTML = '> Lệnh bị khóa';
+}
 
-captchaInput.addEventListener('input', function() {
-    if (this.value.trim().toLowerCase() === 'sudo execute') {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.innerHTML = '> THỰC THI (UNLOCKED)';
-        submitBtn.style.background = 'var(--text-main)';
-        submitBtn.style.color = 'var(--terminal-bg)';
-        playClickSound();
-    } else {
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = '0.3';
-        submitBtn.innerHTML = '> Lệnh bị khóa';
-        submitBtn.style.background = 'transparent';
-        submitBtn.style.color = 'var(--text-main)';
-    }
-});
+if(captchaInput) {
+    captchaInput.addEventListener('input', function() {
+        if (this.value.trim().toLowerCase() === 'sudo execute') {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.innerHTML = '> THỰC THI (UNLOCKED)';
+            submitBtn.style.background = 'var(--text-main)';
+            submitBtn.style.color = 'var(--terminal-bg)';
+            playClickSound();
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.3';
+            submitBtn.innerHTML = '> Lệnh bị khóa';
+            submitBtn.style.background = 'transparent';
+            submitBtn.style.color = 'var(--text-main)';
+        }
+    });
+}
 
+if(subjectSelect) {
+    subjectSelect.addEventListener('change', function() {
+        if (formDatabase[this.value]) {
+            dynamicContainer.innerHTML = renderDynamicHTML(formDatabase[this.value]);
+        } else {
+            dynamicContainer.innerHTML = '';
+        }
+    });
+}
+
+// LƯU NHÁP & PHỤC HỒI FORM
 form.addEventListener('input', () => {
     const currentData = Object.fromEntries(new FormData(form).entries());
     localStorage.setItem('student_form_draft', JSON.stringify(currentData));
@@ -235,7 +265,10 @@ function restoreDraftData() {
                 if (input.type === 'radio' || input.length > 0) {
                     const radioList = document.getElementsByName(key);
                     for (let i = 0; i < radioList.length; i++) {
-                        if (radioList[i].value === savedData[key]) radioList[i].checked = true;
+                        if (radioList[i].value === savedData[key]) {
+                            radioList[i].checked = true;
+                            if(radioList[i].onchange) radioList[i].onchange();
+                        }
                     }
                 } else {
                     input.value = savedData[key];
@@ -248,9 +281,12 @@ function restoreDraftData() {
                 Object.keys(savedData).forEach(key => {
                     const dynamicInput = document.getElementsByName(key);
                     if (dynamicInput.length > 0) {
-                        if(dynamicInput[0].type === 'radio') {
+                        if(dynamicInput[0].type === 'radio' || dynamicInput[0].type === 'checkbox') {
                             for(let i=0; i<dynamicInput.length; i++) {
-                                if(dynamicInput[i].value === savedData[key]) dynamicInput[i].checked = true;
+                                if(dynamicInput[i].value === savedData[key] || (dynamicInput[i].type === 'checkbox' && savedData[key] === 'on')) {
+                                    dynamicInput[i].checked = true;
+                                    window.handleCondition(dynamicInput[i]);
+                                }
                             }
                         } else {
                             dynamicInput[0].value = savedData[key];
@@ -262,42 +298,39 @@ function restoreDraftData() {
     }
 }
 
-subjectSelect.addEventListener('change', function() {
-    if (formDatabase[this.value]) {
-        dynamicContainer.innerHTML = renderDynamicHTML(formDatabase[this.value]);
-    } else {
-        dynamicContainer.innerHTML = '';
-    }
-    form.dispatchEvent(new Event('input')); 
-});
-
+// === XỬ LÝ NÚT NEXT & QUAY LẠI ===
 nextBtn.addEventListener('click', () => {
     const phoneInput = document.getElementById('phone');
     const phoneError = document.getElementById('phone-error');
     const step1Inputs = step1.querySelectorAll('input[required]');
     let isValid = true;
     
-    phoneError.style.display = 'none';
+    if (phoneError) phoneError.style.display = 'none';
+    
     step1Inputs.forEach(input => {
         if (!input.checkValidity()) {
             isValid = false;
-            input.reportValidity();
-            if (input.id === 'phone' && input.validity.patternMismatch) phoneError.style.display = 'block';
+            input.reportValidity(); // Popup đỏ của trình duyệt
+            if (input.id === 'phone' && input.validity.patternMismatch && phoneError) {
+                phoneError.style.display = 'block';
+            }
         }
     });
 
     if (isValid) {
         step1.classList.remove('active');
         step2.classList.add('active');
-        stepIndicator.innerText = '2/2';
+        if (stepIndicator) stepIndicator.innerText = '2/2';
     }
 });
 
-prevBtn.addEventListener('click', () => {
-    step2.classList.remove('active');
-    step1.classList.add('active');
-    stepIndicator.innerText = '1/2';
-});
+if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+        step2.classList.remove('active');
+        step1.classList.add('active');
+        if (stepIndicator) stepIndicator.innerText = '1/2';
+    });
+}
 
 // === 5. XỬ LÝ SUBMIT & KỊCH BẢN TỰ HỦY ===
 form.addEventListener('submit', function(e) {
@@ -306,12 +339,18 @@ form.addEventListener('submit', function(e) {
     prevBtn.style.display = 'none';
     
     let aggregateData = "";
-    const dynamicInputs = dynamicContainer.querySelectorAll('input[type="radio"]:checked, input[type="text"], textarea');
+    const dynamicInputs = dynamicContainer.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, input[type="text"], textarea');
     dynamicInputs.forEach(input => {
-        const label = input.closest('.input-group').querySelector('label').innerText.replace('admin@academy:~$ ', '');
+        const group = input.closest('.input-group') || input.closest('.multiselect-group') || input.closest('.question-wrapper');
+        let label = input.name;
+        if (group && group.querySelector('label')) {
+            label = group.querySelector('label').innerText.replace('admin@system:~$ ', '');
+        }
         aggregateData += `[${label}]: ${input.value}\n`;
     });
-    document.getElementById('dynamic_answers').value = aggregateData;
+    
+    const hiddenField = document.getElementById('dynamic_answers');
+    if (hiddenField) hiddenField.value = aggregateData;
 
     const formData = new FormData(form);
     
@@ -347,7 +386,7 @@ form.addEventListener('submit', function(e) {
         hackerLoader.innerHTML = `[████████████████████] 100%<br>[OK] TRUYỀN DỮ LIỆU THÀNH CÔNG.`;
         playSuccessSound(); 
         
-        // Kịch bản Tự hủy báo động đỏ
+        // Kịch bản Tự hủy
         setTimeout(() => {
             document.getElementById('terminal-window').classList.add('self-destruct-mode');
             
@@ -374,8 +413,6 @@ form.addEventListener('submit', function(e) {
                     clearInterval(destructInterval);
                     document.body.innerHTML = ''; 
                     document.body.style.background = '#000'; 
-                    localStorage.removeItem('student_form_draft');
-                    
                     setTimeout(() => {
                         window.location.href = "https://www.google.com"; 
                     }, 1000);
@@ -389,8 +426,8 @@ form.addEventListener('submit', function(e) {
         statusMessage.innerHTML = '>> ERROR: TRANSMISSION_FAILED';
         statusMessage.className = 'status-message status-error';
         statusMessage.style.display = 'block';
-        submitBtn.style.display = 'block';
-        prevBtn.style.display = 'block';
+        if (submitBtn) submitBtn.style.display = 'block';
+        if (prevBtn) prevBtn.style.display = 'block';
     });
 });
 
